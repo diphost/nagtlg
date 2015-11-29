@@ -47,6 +47,29 @@ func GetUpdatesChan(bot *tgbotapi.BotAPI) (<-chan tgbotapi.Update) {
         return updates
 }
 
+func Talks(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+        // who writing
+        UserName := update.Message.From.UserName
+
+        // ID of chat/dialog
+        // maiby eq UserID or public chat
+        ChatID := update.Message.Chat.ID
+
+        // message text
+        Text := update.Message.Text
+
+        log.Printf("[%s] %d %s", UserName, ChatID, Text)
+
+        // echo
+        reply := Text
+        // create answer message
+        msg := tgbotapi.NewMessage(ChatID, reply)
+        // send message
+        bot.Send(msg)
+        msg = tgbotapi.NewMessage(ChatID, "Мде...")
+        bot.Send(msg)
+}
+
 func main() {
         // read config
         Config := *ReadConfig("config.yml")
@@ -56,27 +79,10 @@ func main() {
         updates := GetUpdatesChan(bot)
         // read updates
         for {
-                update := <- updates
-                // who writing
-                UserName := update.Message.From.UserName
-
-                // ID of chat/dialog
-                // maiby eq UserID or public chat
-                ChatID := update.Message.Chat.ID
-
-                // message text
-                Text := update.Message.Text
-
-                log.Printf("[%s] %d %s", UserName, ChatID, Text)
-
-                // echo
-                reply := Text
-                // create answer message
-                msg := tgbotapi.NewMessage(ChatID, reply)
-                // send message
-                bot.Send(msg)
-                msg = tgbotapi.NewMessage(ChatID, "Мде...")
-                bot.Send(msg)
+                select {
+                case update := <- updates:
+                        Talks(&bot,update)
+                }
         }
 }
 
