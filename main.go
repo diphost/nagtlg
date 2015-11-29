@@ -5,16 +5,23 @@ import (
         "gopkg.in/yaml.v2"
         "log"
         "io/ioutil"
-        "strconv"
 )
 
-func ReadConfig(cf string) (*map[interface{}]interface{}) {
-	cfg, err := ioutil.ReadFile(cf)
+type TypeConfig struct {
+        Token string
+        UserFile string
+}
+
+func ReadConfig(configFilename string) (*TypeConfig) {
+	configBytes, err := ioutil.ReadFile(configFilename)
 	if err != nil {
 		log.Panic(err)
 	}
-	Config := make(map[interface{}]interface{})
-	yaml.Unmarshal(cfg, &Config)
+	configMap := make(map[interface{}]interface{})
+	yaml.Unmarshal(configBytes, &configMap)
+        var Config TypeConfig
+        Config.Token = configMap["token"].(string)
+        Config.UserFile = configMap["user_file"].(string)
 	return &Config
 }
 
@@ -29,19 +36,11 @@ func GetBot(token string) (*tgbotapi.BotAPI) {
         return bot
 }
 
-func GetUpdatesChan(bot *tgbotapi.BotAPI, state_file string) (<-chan tgbotapi.Update) {
-        state, err := ioutil.ReadFile(state_file)
-        if err != nil {
-                log.Print(err)
-        }
-        last_id, err := strconv.Atoi(string(state))
-        if err != nil {
-                last_id = 0
-        }
+func GetUpdatesChan(bot *tgbotapi.BotAPI) (<-chan tgbotapi.Update) {
         // initialize update chan
-        uc := tgbotapi.NewUpdate(last_id)
-        uc.Timeout = 60
-        updates, err := bot.GetUpdatesChan(uc)
+        c := tgbotapi.NewUpdate(0)
+        c.Timeout = 60
+        updates, err := bot.GetUpdatesChan(c)
         if err != nil {
                 log.Panic(err)
         }
@@ -52,9 +51,9 @@ func main() {
         // read config
         Config := *ReadConfig("config.yml")
         // connect to Telegram API
-        bot := GetBot(Config["token"].(string))
+        bot := GetBot(Config.Token)
         // initialize update chan
-        updates := GetUpdatesChan(bot, Config["state_file"].(string))
+        updates := GetUpdatesChan(bot)
         // read updates
         for {
                 update := <- updates
@@ -76,7 +75,7 @@ func main() {
                 msg := tgbotapi.NewMessage(ChatID, reply)
                 // send message
                 bot.Send(msg)
-                msg = tgbotapi.NewMessage(ChatID, "Мамель, мы тебя любим!")
+                msg = tgbotapi.NewMessage(ChatID, "Мде...")
                 bot.Send(msg)
         }
 }
