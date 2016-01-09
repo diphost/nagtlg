@@ -1,4 +1,7 @@
 ---
-token: 555566666:SSGbDXcvwoeN77l9t5mnEFKAkqg455MfPZd4
-state_file: /var/tmp/nagtlg_updates_id
+Token: 11111111111:AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+NagiosUsernameField: address2
+UserFile: ~/tlgusers.cache
+LivestatusSocket: /var/spool/nagios/rw/live
+NagiosNotifySocket: /tmp/tlg_notify
 

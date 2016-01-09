@@ -1,0 +1,12 @@
+# 'notify-host-by-telegram' command definition
+define command{
+        command_name    notify-host-by-telegram
+        command_line    /usr/bin/printf "%b" "$CONTACTADDRESS2$\n***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\nHost: $HOSTNAME$\nState: $HOSTSTATE$\nAddress: $HOSTADDRESS$\nInfo: $HOSTOUTPUT$\n\nDate/Time: $LONGDATETIME$\n" | /usr/bin/nc -N -U /tmp/tlg_notify
+        }
+
+# 'notify-service-by-telegram' command definition
+define command{
+        command_name    notify-service-by-telegram
+        command_line    /usr/bin/printf "%b" "$CONTACTADDRESS2$\n***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\n\nService: $SERVICEDESC$\nHost: $HOSTALIAS$\nAddress: $HOSTADDRESS$\nState: $SERVICESTATE$\n\nDate/Time: $LONGDATETIME$\n\nAdditional Info:\n\n$SERVICEOUTPUT$" | /usr/bin/nc -N -U /tmp/tlg_notify
+        }
+

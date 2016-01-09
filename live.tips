@@ -1,0 +1,18 @@
+// find nagios user by telegram username
+printf "GET contacts\nColumns: name\nFilter: address2 = schors\n\n" | nc -n -U live
+
+// find all CRITICAL servises with acknowledged
+// state:
+// 0 - OK
+// 1 - WARNING
+// 2 - CRITICAL
+// 3 - UNKNOWN
+printf "GET services\nColumns: host_alias display_name state\nFilter: state = 2\nFilter: acknowledged = 1\nAnd: 2\nAuthUser: phil\n\n" | nc -n -U live
+
+// find all hosts
+// state:
+// 0 - UP
+// 1 - DOWN
+// 2 - UNREACHABLE
+printf "GET hosts\nColumns: host_name hard_state\n\n" | nc -n -U live
+
