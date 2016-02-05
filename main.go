@@ -147,14 +147,27 @@ func Talks(usersFileName string, livestatusSocketFileName string, nagiosUsername
         if len(matches) > 0 {
                 var reply string
                 comm := matches[1]
-                //commArgs := regexp.MustCompile(`\s+`).Split(matches[2], -1)
+                commArgs := regexp.MustCompile(`\s+`).Split(matches[2], -1)
                 switch comm {
                 case `help`:
                         reply = HelpMessage
                 case `start`:
                         reply = "Greetings to you, " + UserName + "!"
                 case `hosts`:
-                        reply, _ = GetNagiosAllProblemHosts(livestatusSocketFileName, NagiosUser)
+                        filter := "Filter: hard_state = 1\nFilter: hard_state = 2\nOr: 2\n"
+                        if len(commArgs) > 0 {
+                                switch commArgs[0] {
+                                case `d`:
+                                        filter = "Filter: hard_state = 1\n"
+                                case `u`:
+                                        filter = "Filter: hard_state = 2\n"
+                                }
+                        }
+                        if len(NagiosUser) == 0 {
+                                reply = ``
+                        } else {
+                                reply, _ = GetNagiosHosts(livestatusSocketFileName, filter, NagiosUser)
+                        }
                 }
                 if reply != `` {
                         msg := tgbotapi.NewMessage(ChatID, reply)
@@ -233,20 +246,12 @@ func Notify(usersFileName string, bot *BotAPI, notify io.ReadCloser) {
         }
 }
 
-// Get all problem nagios hosts
-func GetNagiosAllProblemHosts(livestatusSocketFileName string, nagiosUserName string) (string, bool) {
-        if len(nagiosUserName) == 0 {
-                return "", false
-        }
-        return GetNagiosHosts(livestatusSocketFileName, "Filter: hard_state = 1\nFilter: hard_state = 2\nOR: 2\n" ,nagiosUserName)
-}
-
 // Get standart host list with filters
 func GetNagiosHosts(livestatusSocketFileName string, filters string, nagiosUserName string) (string, bool) {
         var buf [1024]byte
         var response, up, down, unreachable string
         // beware! filters MUST  ended by "\n"
-        r, ok := GetLiveStatus(livestatusSocketFileName, fmt.Sprintf("GET hosts\nColumns: host_name hard_state \n%sAuthUser: %s\n\n", filters, nagiosUserName))
+        r, ok := GetLiveStatus(livestatusSocketFileName, fmt.Sprintf("GET hosts\nColumns: host_name hard_state\n%sAuthUser: %s\n\n", filters, nagiosUserName))
         if ok {
                 defer r.Close()
                 for {
@@ -257,6 +262,7 @@ func GetNagiosHosts(livestatusSocketFileName string, filters string, nagiosUserN
                         }
                         response += string(buf[:n])
                 }
+                log.Println("Livestatus RESP:\n" + response + "\n")
                 stringArray := strings.Split(response, "\n")
                 if len(stringArray) == 0 {
                         return "", false
@@ -278,7 +284,7 @@ func GetNagiosHosts(livestatusSocketFileName string, filters string, nagiosUserN
                         }
                 }
                 hosts := ""
-                if len(down) > 0 {
+                if len(unreachable) > 0 {
                         hosts += "UNREACHABLE HOSTS:\n"
                         hosts += unreachable + "\n"
                 }
@@ -314,6 +320,7 @@ func GetNagiosUser(livestatusSocketFileName string, nagiosUsernameFieldName stri
                         }
                         response += string(buf[:n])
                 }
+                log.Println("Livestatus RESP:\n" + response + "\n")
                 // parse text for User name
                 stringArray := strings.Split(response, "\n")
                 if len(stringArray) == 0 {
@@ -328,6 +335,7 @@ func GetNagiosUser(livestatusSocketFileName string, nagiosUsernameFieldName stri
 
 // Print command to LiveStatus UNIX-socket and return io.ReadCloser object
 func GetLiveStatus(livestatusSocketFileName string, request string) (io.ReadWriteCloser, bool) {
+        log.Println("Livestatus PUT:\n" + request + "\n")
         r, err := net.DialUnix("unix", nil, &net.UnixAddr{livestatusSocketFileName, "unix"})
         if err != nil {
                 log.Println(err)
